@@ -6,13 +6,18 @@ require_once "db_config.php";
 
 $action = $_GET["action"] ?? "";
 
-if($action == "list")
-{
-    $sql =
-    "SELECT
+
+// ============================================================
+// LIST MEMBERS
+// ============================================================
+if ($action == "list") {
+
+    $sql = "
+    SELECT
         u.Username AS MemberID,
         m.Name,
         m.Surname,
+        m.Contact,
         u.Password,
         u.Role,
         m.Active
@@ -25,9 +30,10 @@ if($action == "list")
 
     $data = [];
 
-    while($row = $result->fetch_assoc())
-    {
+    while ($row = $result->fetch_assoc()) {
+
         $data[] = $row;
+
     }
 
     echo json_encode([
@@ -38,10 +44,13 @@ if($action == "list")
     exit;
 }
 
-if($action == "save")
-{
-    $data =
-    json_decode(
+
+// ============================================================
+// SAVE MEMBER
+// ============================================================
+if ($action == "save") {
+
+    $data = json_decode(
         file_get_contents("php://input"),
         true
     );
@@ -55,6 +64,9 @@ if($action == "save")
     $surname =
         trim($data["Surname"] ?? "");
 
+    $contact =
+        trim($data["Contact"] ?? "");
+
     $password =
         trim($data["Password"] ?? "");
 
@@ -64,28 +76,47 @@ if($action == "save")
     $active =
         trim($data["Active"] ?? "Y");
 
-    if(
+
+    // ========================================================
+    // VALIDATIONS
+    // ========================================================
+    if (
         $memberID == "" ||
         $name == "" ||
         $surname == "" ||
+        $contact == "" ||
         $password == ""
-    )
-    {
+    ) {
+
         echo json_encode([
-            "success"=>false,
-            "message"=>"All fields are required."
+            "success" => false,
+            "message" => "All fields are required."
         ]);
 
         exit;
+
     }
 
-    $sqlUser =
-    "INSERT INTO tblusers
-    (Username,Password,Role)
-    VALUES(?,?,?)
+
+    // ========================================================
+    // SAVE USER ACCOUNT
+    // ========================================================
+    $sqlUser = "
+    INSERT INTO tblusers
+    (
+        Username,
+        Password,
+        Role
+    )
+    VALUES
+    (
+        ?,
+        ?,
+        ?
+    )
     ON DUPLICATE KEY UPDATE
-    Password=VALUES(Password),
-    Role=VALUES(Role)";
+        Password = VALUES(Password),
+        Role = VALUES(Role)";
 
     $stmt = $conn->prepare($sqlUser);
 
@@ -98,38 +129,61 @@ if($action == "save")
 
     $stmt->execute();
 
-    $sqlMember =
-    "INSERT INTO tblmembers
-    (MemberID,Name,Surname,Active)
-    VALUES(?,?,?,?)
+
+    // ========================================================
+    // SAVE MEMBER PROFILE
+    // ========================================================
+    $sqlMember = "
+    INSERT INTO tblmembers
+    (
+        MemberID,
+        Name,
+        Surname,
+        Contact,
+        Active
+    )
+    VALUES
+    (
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+    )
     ON DUPLICATE KEY UPDATE
-    Name=VALUES(Name),
-    Surname=VALUES(Surname),
-    Active=VALUES(Active)";
+        Name = VALUES(Name),
+        Surname = VALUES(Surname),
+        Contact = VALUES(Contact),
+        Active = VALUES(Active)";
 
     $stmt = $conn->prepare($sqlMember);
 
     $stmt->bind_param(
-        "ssss",
+        "sssss",
         $memberID,
         $name,
         $surname,
+        $contact,
         $active
     );
 
     $stmt->execute();
 
     echo json_encode([
-        "success"=>true,
-        "message"=>"Member saved successfully."
+        "success" => true,
+        "message" => "Member saved successfully."
     ]);
 
     exit;
 }
 
+
+// ============================================================
+// INVALID ACTION
+// ============================================================
 echo json_encode([
-    "success"=>false,
-    "message"=>"Invalid action."
+    "success" => false,
+    "message" => "Invalid action."
 ]);
 
 ?>
