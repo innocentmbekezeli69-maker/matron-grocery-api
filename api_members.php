@@ -18,6 +18,7 @@ if ($action == "list") {
         m.Name,
         m.Surname,
         m.Contact,
+        m.Email,
         u.Password,
         u.Role,
         m.Active
@@ -46,135 +47,155 @@ if ($action == "list") {
 
 
 // ============================================================
-// SAVE MEMBER
+// SAVE / UPDATE MEMBER
 // ============================================================
 if ($action == "save") {
 
-    $data = json_decode(
-        file_get_contents("php://input"),
-        true
-    );
+    try {
 
-    $memberID =
-        trim($data["MemberID"] ?? "");
+        $data = json_decode(
+            file_get_contents("php://input"),
+            true
+        );
 
-    $name =
-        trim($data["Name"] ?? "");
+        $memberID =
+            trim($data["MemberID"] ?? "");
 
-    $surname =
-        trim($data["Surname"] ?? "");
+        $name =
+            trim($data["Name"] ?? "");
 
-    $contact =
-        trim($data["Contact"] ?? "");
+        $surname =
+            trim($data["Surname"] ?? "");
 
-    $password =
-        trim($data["Password"] ?? "");
+        $contact =
+            trim($data["Contact"] ?? "");
 
-    $role =
-        trim($data["Role"] ?? "Member");
+        $email =
+            trim($data["Email"] ?? "");
 
-    $active =
-        trim($data["Active"] ?? "Y");
+        $password =
+            trim($data["Password"] ?? "");
+
+        $role =
+            trim($data["Role"] ?? "Member");
+
+        $active =
+            trim($data["Active"] ?? "Y");
 
 
-    // ========================================================
-    // VALIDATIONS
-    // ========================================================
-    if (
-        $memberID == "" ||
-        $name == "" ||
-        $surname == "" ||
-        $contact == "" ||
-        $password == ""
-    ) {
+        // ====================================================
+        // VALIDATIONS
+        // ====================================================
+        if (
+            $memberID == "" ||
+            $name == "" ||
+            $surname == "" ||
+            $contact == "" ||
+            $email == "" ||
+            $password == ""
+        ) {
+
+            echo json_encode([
+                "success" => false,
+                "message" => "All fields are required."
+            ]);
+
+            exit;
+
+        }
+
+
+        // ====================================================
+        // SAVE USER ACCOUNT
+        // ====================================================
+        $sqlUser = "
+        INSERT INTO tblusers
+        (
+            Username,
+            Password,
+            Role
+        )
+        VALUES
+        (
+            ?,
+            ?,
+            ?
+        )
+        ON DUPLICATE KEY UPDATE
+            Password = VALUES(Password),
+            Role = VALUES(Role)";
+
+        $stmt = $conn->prepare($sqlUser);
+
+        $stmt->bind_param(
+            "sss",
+            $memberID,
+            $password,
+            $role
+        );
+
+        $stmt->execute();
+
+
+        // ====================================================
+        // SAVE MEMBER PROFILE
+        // ====================================================
+        $sqlMember = "
+        INSERT INTO tblmembers
+        (
+            MemberID,
+            Name,
+            Surname,
+            Contact,
+            Email,
+            Active
+        )
+        VALUES
+        (
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?
+        )
+        ON DUPLICATE KEY UPDATE
+            Name = VALUES(Name),
+            Surname = VALUES(Surname),
+            Contact = VALUES(Contact),
+            Email = VALUES(Email),
+            Active = VALUES(Active)";
+
+        $stmt = $conn->prepare($sqlMember);
+
+        $stmt->bind_param(
+            "ssssss",
+            $memberID,
+            $name,
+            $surname,
+            $contact,
+            $email,
+            $active
+        );
+
+        $stmt->execute();
+
+        echo json_encode([
+            "success" => true,
+            "message" => "Member saved successfully."
+        ]);
+
+    } catch (Exception $ex) {
 
         echo json_encode([
             "success" => false,
-            "message" => "All fields are required."
+            "message" => $ex->getMessage()
         ]);
-
-        exit;
 
     }
 
-
-    // ========================================================
-    // SAVE USER ACCOUNT
-    // ========================================================
-    $sqlUser = "
-    INSERT INTO tblusers
-    (
-        Username,
-        Password,
-        Role
-    )
-    VALUES
-    (
-        ?,
-        ?,
-        ?
-    )
-    ON DUPLICATE KEY UPDATE
-        Password = VALUES(Password),
-        Role = VALUES(Role)";
-
-    $stmt = $conn->prepare($sqlUser);
-
-    $stmt->bind_param(
-        "sss",
-        $memberID,
-        $password,
-        $role
-    );
-
-    $stmt->execute();
-
-
-    // ========================================================
-    // SAVE MEMBER PROFILE
-    // ========================================================
-    $sqlMember = "
-    INSERT INTO tblmembers
-    (
-        MemberID,
-        Name,
-        Surname,
-        Contact,
-        Active
-    )
-    VALUES
-    (
-        ?,
-        ?,
-        ?,
-        ?,
-        ?
-    )
-    ON DUPLICATE KEY UPDATE
-        Name = VALUES(Name),
-        Surname = VALUES(Surname),
-        Contact = VALUES(Contact),
-        Active = VALUES(Active)";
-
-    $stmt = $conn->prepare($sqlMember);
-
-    $stmt->bind_param(
-        "sssss",
-        $memberID,
-        $name,
-        $surname,
-        $contact,
-        $active
-    );
-
-    $stmt->execute();
-
-    echo json_encode([
-        "success" => true,
-        "message" => "Member saved successfully."
-    ]);
-
     exit;
+
 }
 
 
