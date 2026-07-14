@@ -42,19 +42,19 @@ elseif ($action == "popularity") {
     while ($row = $result->fetch_assoc()) { $data[] = $row; }
     echo json_encode(["success" => true, "data" => $data]);
 } 
-// 3. NEW: MEMBER PARTICIPATION REPORT
+// 3. MEMBER PARTICIPATION REPORT
 elseif ($action == "member_participation") {
     $start = $_GET["start"] ?? "";
     $end = $_GET["end"] ?? "";
     
-    // Changed 'tblUsers' to 'tblusers' to match your database
-    $sql = "SELECT mo.MemberID, u.Name, u.Surname, 
+    // UPDATED: Joined on 'Username' (from tblusers) and 'MemberID' (from tblmemberorders)
+    $sql = "SELECT u.Username, u.Name, u.Surname, 
                    COUNT(mo.OrderID) AS TotalOrdersPlaced,
                    SUM(mo.TotalPrice) AS TotalSpending 
             FROM tblusers u 
-            LEFT JOIN tblmemberorders mo ON mo.MemberID = mo.MemberID 
+            LEFT JOIN tblmemberorders mo ON u.Username = mo.MemberID 
             WHERE mo.OrderDate BETWEEN ? AND ? 
-            GROUP BY u.MemberID, u.Name, u.Surname 
+            GROUP BY u.Username, u.Name, u.Surname 
             ORDER BY TotalOrdersPlaced DESC";
             
     $stmt = $conn->prepare($sql);
@@ -66,7 +66,6 @@ elseif ($action == "member_participation") {
     while ($row = $result->fetch_assoc()) { $data[] = $row; }
     echo json_encode(["success" => true, "data" => $data]);
 }
-else {
     sendError("Invalid action.");
 }
 ?>
