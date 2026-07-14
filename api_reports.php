@@ -4,14 +4,12 @@ require_once "db_config.php";
 
 $action = $_GET["action"] ?? "";
 
-// Helper function to return standardized error messages
 function sendError($message) {
     echo json_encode(["success" => false, "message" => $message]);
     exit;
 }
 
 // 1. WHOLESALE REPORT
-// Consolidates quantity and cost for inventory demand tracking
 if ($action == "wholesale") {
     $start = $_GET["start"] ?? "";
     $end = $_GET["end"] ?? "";
@@ -30,7 +28,6 @@ if ($action == "wholesale") {
 } 
 
 // 2. POPULARITY REPORT
-// Analyzes item frequency regardless of specific time ranges
 elseif ($action == "popularity") {
     $sql = "SELECT gi.ItemID, gi.Description, COUNT(mo.OrderID) AS TotalFrequencyOrdered, SUM(mo.Quantity) AS GrossUnitsDistributed 
             FROM tblgroceryitems gi 
@@ -43,30 +40,32 @@ elseif ($action == "popularity") {
 } 
 
 // 3. MEMBER PARTICIPATION REPORT
-// Links Users to Orders via MemberID to calculate loyalty metrics
 elseif ($action == "member_participation") {
     $start = $_GET["start"] ?? "";
     $end = $_GET["end"] ?? "";
-    
-    // SQL joins tblusers (u) and tblmemberorders (mo) 
-    // Uses Username from users and MemberID from orders as the join key
-    $sql = "SELECT u.Username, u.Name, u.Surname, 
-                   COUNT(mo.OrderID) AS TotalOrdersPlaced,
-                   SUM(mo.TotalPrice) AS TotalSpending 
+
+    if (empty($start) || empty($end)) {
+        sendError("Start and End dates are required.");
+    }
+
+    $sql = "SELECT u.Username, m.Name, m.Surname, 
+                   COUNT(mo.OrderID) AS TotalOrdersPlaced, 
+                   COALESCE(SUM(mo.TotalPrice), 0) AS TotalSpending 
             FROM tblusers u 
-            LEFT JOIN tblmemberorders mo ON u.Username = mo.MemberID 
-            WHERE mo.OrderDate BETWEEN ? AND ? 
-            GROUP BY u.Username, u.Name, u.Surname 
+            INNER JOIN tblmembers m ON u.Username = m.MemberID 
+            LEFT JOIN tblmemberorders mo ON m.MemberID = mo.MemberID AND mo.OrderDate BETWEEN ? AND ? 
+            GROUP BY u.Username, m.Name, m.Surname 
             ORDER BY TotalOrdersPlaced DESC";
-            
+
     $stmt = $conn->prepare($sql);
+    if (!$stmt) { sendError($conn->error); }
     $stmt->bind_param("ss", $start, $end);
-    $stmt->execute();
+    if (!$stmt->execute()) { sendError($stmt->error); }
     $result = $stmt->get_result();
-    
     $data = [];
     while ($row = $result->fetch_assoc()) { $data[] = $row; }
     echo json_encode(["success" => true, "data" => $data]);
+    $stmt->close();
 } 
 
 else {
