@@ -42,25 +42,30 @@ elseif ($action == "popularity") {
     while ($row = $result->fetch_assoc()) { $data[] = $row; }
     echo json_encode(["success" => true, "data" => $data]);
 } 
-// 3. MEMBER PARTICIPATION: Measures member activity frequency
+// 3. NEW: MEMBER PARTICIPATION REPORT
 elseif ($action == "member_participation") {
     $start = $_GET["start"] ?? "";
     $end = $_GET["end"] ?? "";
     
-    // SQL calculates total orders and total spend per member
-    $sql = "SELECT u.Username, u.Name, u.Surname, COUNT(mo.OrderID) AS TotalOrdersPlaced, SUM(mo.TotalPrice) AS TotalSpending 
-            FROM tblUsers u 
+    // Changed 'tblUsers' to 'tblusers' to match your database
+    $sql = "SELECT u.Username, u.Name, u.Surname, 
+                   COUNT(mo.OrderID) AS TotalOrdersPlaced,
+                   SUM(mo.TotalPrice) AS TotalSpending 
+            FROM tblusers u 
             LEFT JOIN tblmemberorders mo ON u.Username = mo.Username 
             WHERE mo.OrderDate BETWEEN ? AND ? 
-            GROUP BY u.Username, u.Name, u.Surname ORDER BY TotalOrdersPlaced DESC";
+            GROUP BY u.Username, u.Name, u.Surname 
+            ORDER BY TotalOrdersPlaced DESC";
+            
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ss", $start, $end);
     $stmt->execute();
     $result = $stmt->get_result();
+    
     $data = [];
     while ($row = $result->fetch_assoc()) { $data[] = $row; }
     echo json_encode(["success" => true, "data" => $data]);
-} 
+}
 else {
     sendError("Invalid action.");
 }
