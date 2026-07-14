@@ -48,11 +48,11 @@ elseif ($action == "member_participation") {
     $end = $_GET["end"] ?? "";
     
     // Changed 'tblUsers' to 'tblusers' to match your database
-    $sql = "SELECT u.MemberID, u.Name, u.Surname, 
+    $sql = "SELECT mo.MemberID, u.Name, u.Surname, 
                    COUNT(mo.OrderID) AS TotalOrdersPlaced,
                    SUM(mo.TotalPrice) AS TotalSpending 
             FROM tblusers u 
-            LEFT JOIN tblmemberorders mo ON u.MemberID = mo.MemberID 
+            LEFT JOIN tblmemberorders mo ON mo.MemberID = mo.MemberID 
             WHERE mo.OrderDate BETWEEN ? AND ? 
             GROUP BY u.MemberID, u.Name, u.Surname 
             ORDER BY TotalOrdersPlaced DESC";
