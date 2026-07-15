@@ -68,6 +68,62 @@ elseif ($action == "member_participation") {
     $stmt->close();
 } 
 
+elseif ($action == "member_summary") {
+
+    $start = $_GET["start"] ?? "";
+    $end = $_GET["end"] ?? "";
+
+    if (empty($start) || empty($end)) {
+        sendError(
+            "Start and End dates are required."
+        );
+    }
+
+    $sql =
+    "SELECT
+        mo.MemberID,
+        m.Name,
+        m.Surname,
+        gi.Description,
+        mo.Quantity,
+        mo.TotalPrice
+     FROM tblmemberorders mo
+     INNER JOIN tblmembers m
+        ON mo.MemberID = m.MemberID
+     INNER JOIN tblgroceryitems gi
+        ON mo.ItemID = gi.ItemID
+     WHERE mo.OrderDate
+        BETWEEN ? AND ?
+     ORDER BY
+        mo.MemberID,
+        gi.Description";
+
+    $stmt = $conn->prepare($sql);
+
+    $stmt->bind_param(
+        "ss",
+        $start,
+        $end
+    );
+
+    $stmt->execute();
+
+    $result =
+        $stmt->get_result();
+
+    $data = [];
+
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    echo json_encode([
+        "success" => true,
+        "data" => $data
+    ]);
+
+    $stmt->close();
+}    
 else {
     sendError("Invalid action.");
 }
