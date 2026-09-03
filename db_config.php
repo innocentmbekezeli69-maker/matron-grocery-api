@@ -1,17 +1,18 @@
 <?php
 
-$host = "hayabusa.proxy.rlwy.net";
-$db_user = "root";
-$db_pass = "ODdiTdUeXiJkRZraKoObScKhLybYReLV";
-$db_name = "railway";
-$db_port = 31364;
+$host = "sql305.infinityfree.com";
+$db_user = "if0_42260330";
+$db_pass = "NRBKqP6J1yq";
+$db_name = "if0_42260330_matrongroceryDb1";
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 $conn = new mysqli(
     $host,
     $db_user,
     $db_pass,
-    $db_name,
-    $db_port
+    $db_name
 );
 
 if ($conn->connect_error) {
@@ -20,7 +21,7 @@ if ($conn->connect_error) {
 
     echo json_encode([
         "success" => false,
-        "message" => "Database connection failed: " . $conn->connect_error
+        "message" => "Database connection failed"
     ]);
 
     exit;
